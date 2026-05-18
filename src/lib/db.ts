@@ -57,3 +57,34 @@ export async function signedUrl(path: string): Promise<string | null> {
   const { data } = await supabase.storage.from("receipts").createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
+
+export type WiseRecipient = {
+  id: string;
+  name: string;
+  relation: string;
+  min_yen: number;
+  created_at: string;
+};
+
+export type WiseTransfer = {
+  id: string;
+  recipient_id: string;
+  amount_sent_yen: number;
+  charge_yen: number;
+  inr_received: number;
+  transfer_date: string;
+  note: string | null;
+  created_at: string;
+};
+
+export async function getWiseRecipients(): Promise<WiseRecipient[]> {
+  const { data, error } = await (supabase as any).from("wise_recipients").select("*").order("created_at");
+  if (error) throw error;
+  return data as WiseRecipient[];
+}
+
+export async function getWiseTransfers(): Promise<WiseTransfer[]> {
+  const { data, error } = await (supabase as any).from("wise_transfers").select("*").order("transfer_date", { ascending: false }).limit(500);
+  if (error) throw error;
+  return (data ?? []).map((t: any) => ({ ...t, inr_received: Number(t.inr_received) })) as WiseTransfer[];
+}
