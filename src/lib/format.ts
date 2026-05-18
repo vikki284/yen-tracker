@@ -9,6 +9,9 @@ export const dateLabel = (s: string | Date) =>
 
 export const CATEGORIES = [
   "groceries", "dining", "transit", "utilities", "rent", "shopping",
-  "entertainment", "health", "convenience", "other",
+  "entertainment", "health", "convenience", "wise", "other",
 ] as const;
+
+export const inr = (n: number | null | undefined) =>
+  n == null ? "—" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 export type Category = (typeof CATEGORIES)[number];
