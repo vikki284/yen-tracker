@@ -9,7 +9,7 @@ export const dateLabel = (s: string | Date) =>
 
 export const CATEGORIES = [
   "groceries", "dining", "transit", "utilities", "rent", "shopping",
-  "entertainment", "health", "convenience", "wise", "other",
+  "entertainment", "health", "convenience", "wise", "mom", "dad", "preethu", "other",
 ] as const;
 
 export const inr = (n: number | null | undefined) =>
