@@ -14,7 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accounts: {
+        Row: {
+          balance_yen: number
+          bank_type: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          balance_yen?: number
+          bank_type?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          balance_yen?: number
+          bank_type?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          account_id: string
+          amount_yen: number
+          category: string
+          created_at: string
+          description: string | null
+          expense_date: string
+          id: string
+          receipt_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount_yen: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          id?: string
+          receipt_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount_yen?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          id?: string
+          receipt_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      receipts: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          image_path: string
+          items: Json
+          merchant: string | null
+          purchase_date: string | null
+          raw_text: string | null
+          status: string
+          tax_yen: number | null
+          total_yen: number | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          image_path: string
+          items?: Json
+          merchant?: string | null
+          purchase_date?: string | null
+          raw_text?: string | null
+          status?: string
+          tax_yen?: number | null
+          total_yen?: number | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string
+          items?: Json
+          merchant?: string | null
+          purchase_date?: string | null
+          raw_text?: string | null
+          status?: string
+          tax_yen?: number | null
+          total_yen?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
