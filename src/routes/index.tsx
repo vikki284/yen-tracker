@@ -1,26 +1,122 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { AppShell } from "@/components/AppShell";
+import { getAccounts, getExpenses, getReceipts } from "@/lib/db";
+import { yen, dateLabel } from "@/lib/format";
+import { NewExpenseDialog } from "@/components/NewExpenseDialog";
+import { ArrowUpRight, Receipt as ReceiptIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({ meta: [{ title: "Overview — Chōbo" }] }),
+  component: () => <AppShell><Dashboard /></AppShell>,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Dashboard() {
+  const accounts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
+  const expenses = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
+  const receipts = useQuery({ queryKey: ["receipts"], queryFn: getReceipts });
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthSpend = (expenses.data ?? [])
+    .filter((e) => new Date(e.expense_date) >= monthStart)
+    .reduce((a, b) => a + b.amount_yen, 0);
+
+  const byAccount = new Map<string, number>();
+  (expenses.data ?? []).filter((e) => new Date(e.expense_date) >= monthStart)
+    .forEach((e) => byAccount.set(e.account_id, (byAccount.get(e.account_id) ?? 0) + e.amount_yen));
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="space-y-10">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+            {now.toLocaleDateString("en-US", { weekday: "long" })} · {dateLabel(now)}
+          </p>
+          <h1 className="font-display text-5xl font-bold tracking-tight mt-1">Overview</h1>
+        </div>
+        <NewExpenseDialog />
+      </header>
+
+      <section>
+        <h2 className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Accounts</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {accounts.data?.map((a) => {
+            const spent = byAccount.get(a.id) ?? 0;
+            return (
+              <div key={a.id} className="rounded-lg border border-border bg-card p-6 shadow-paper relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-1" style={{ background: a.color }} />
+                <div className="flex items-center justify-between">
+                  <div className="font-display text-xl font-semibold">{a.name}</div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{a.bank_type}</span>
+                </div>
+                <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(a.balance_yen)}</p>
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                  This month · {yen(spent)} spent
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6 shadow-paper">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-xl font-semibold">Recent expenses</h2>
+            <Link to="/expenses" className="text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              All <ArrowUpRight className="size-3" />
+            </Link>
+          </div>
+          <ul className="divide-y divide-border">
+            {(expenses.data ?? []).slice(0, 8).map((e) => {
+              const acct = accounts.data?.find((a) => a.id === e.account_id);
+              return (
+                <li key={e.id} className="flex items-center justify-between py-3">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{e.description ?? <span className="text-muted-foreground capitalize">{e.category}</span>}</div>
+                    <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {dateLabel(e.expense_date)} · {acct?.name ?? "—"} · {e.category}
+                    </div>
+                  </div>
+                  <div className="font-mono tabular-nums">{yen(e.amount_yen)}</div>
+                </li>
+              );
+            })}
+            {expenses.data?.length === 0 && (
+              <li className="py-12 text-center text-sm text-muted-foreground">No expenses yet. Log your first one above.</li>
+            )}
+          </ul>
+          <div className="mt-6 border-t border-dashed border-foreground/20 pt-4 flex justify-between font-mono text-sm">
+            <span className="uppercase tracking-widest text-muted-foreground">{now.toLocaleDateString("en-US", { month: "long" })} total</span>
+            <span className="tabular-nums font-semibold">{yen(monthSpend)}</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-6 shadow-paper">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-xl font-semibold">Latest receipts</h2>
+            <Link to="/receipts" className="text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              All <ArrowUpRight className="size-3" />
+            </Link>
+          </div>
+          <ul className="space-y-3">
+            {(receipts.data ?? []).slice(0, 5).map((r) => (
+              <li key={r.id} className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-md bg-paper-mute"><ReceiptIcon className="size-4" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="truncate font-medium">{r.merchant ?? "Scanning…"}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{dateLabel(r.created_at)}</div>
+                </div>
+                <div className="font-mono text-sm tabular-nums">{yen(r.total_yen)}</div>
+              </li>
+            ))}
+            {receipts.data?.length === 0 && (
+              <li className="py-10 text-center text-sm text-muted-foreground">No receipts scanned yet.</li>
+            )}
+          </ul>
+        </div>
+      </section>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
