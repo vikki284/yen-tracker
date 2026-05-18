@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WiseRouteImport } from './routes/wise'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ReceiptsRouteImport } from './routes/receipts'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WiseRoute = WiseRouteImport.update({
+  id: '/wise',
+  path: '/wise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/expenses': typeof ExpensesRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
+  '/wise': typeof WiseRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/expenses': typeof ExpensesRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
+  '/wise': typeof WiseRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/expenses': typeof ExpensesRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
+  '/wise': typeof WiseRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/expenses' | '/receipts' | '/reports'
+  fullPaths: '/' | '/auth' | '/expenses' | '/receipts' | '/reports' | '/wise'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/expenses' | '/receipts' | '/reports'
-  id: '__root__' | '/' | '/auth' | '/expenses' | '/receipts' | '/reports'
+  to: '/' | '/auth' | '/expenses' | '/receipts' | '/reports' | '/wise'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/expenses'
+    | '/receipts'
+    | '/reports'
+    | '/wise'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,10 +93,18 @@ export interface RootRouteChildren {
   ExpensesRoute: typeof ExpensesRoute
   ReceiptsRoute: typeof ReceiptsRoute
   ReportsRoute: typeof ReportsRoute
+  WiseRoute: typeof WiseRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wise': {
+      id: '/wise'
+      path: '/wise'
+      fullPath: '/wise'
+      preLoaderRoute: typeof WiseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExpensesRoute: ExpensesRoute,
   ReceiptsRoute: ReceiptsRoute,
   ReportsRoute: ReportsRoute,
+  WiseRoute: WiseRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

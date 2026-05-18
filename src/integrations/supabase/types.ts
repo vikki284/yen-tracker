@@ -166,6 +166,77 @@ export type Database = {
           },
         ]
       }
+      wise_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          min_yen: number
+          name: string
+          relation: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          min_yen?: number
+          name: string
+          relation?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          min_yen?: number
+          name?: string
+          relation?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wise_transfers: {
+        Row: {
+          amount_sent_yen: number
+          charge_yen: number
+          created_at: string
+          id: string
+          inr_received: number
+          note: string | null
+          recipient_id: string
+          transfer_date: string
+          user_id: string
+        }
+        Insert: {
+          amount_sent_yen: number
+          charge_yen?: number
+          created_at?: string
+          id?: string
+          inr_received: number
+          note?: string | null
+          recipient_id: string
+          transfer_date?: string
+          user_id: string
+        }
+        Update: {
+          amount_sent_yen?: number
+          charge_yen?: number
+          created_at?: string
+          id?: string
+          inr_received?: number
+          note?: string | null
+          recipient_id?: string
+          transfer_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wise_transfers_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "wise_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
