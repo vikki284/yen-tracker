@@ -120,7 +120,7 @@ function WisePage() {
           <tbody>
             {(transfers.data ?? []).map((t) => {
               const r = recipients.data?.find((x) => x.id === t.recipient_id);
-              const net = t.amount_sent_yen;
+              const net = t.amount_sent_yen - t.charge_yen;
               const rate = net > 0 ? (t.inr_received / net).toFixed(4) : "—";
               return (
                 <tr key={t.id} className="border-t border-border hover:bg-paper-mute/40">
@@ -191,8 +191,11 @@ function NewTransferDialog({ recipients }: { recipients: WiseRecipient[] }) {
   });
 
   const sentN = parseInt(sent || "0", 10) || 0;
+  const feeN = parseInt(fee || "0", 10) || 0;
   const recvN = parseFloat(received || "0") || 0;
-  const rate = sentN > 0 && recvN > 0 ? (recvN / sentN).toFixed(4) : null;
+  const netSent = Math.max(0, sentN - feeN);
+  const rate = netSent > 0 && recvN > 0 ? (recvN / netSent).toFixed(4) : null;
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -237,7 +240,7 @@ function NewTransferDialog({ recipients }: { recipients: WiseRecipient[] }) {
           </div>
           {rate && (
             <p className="font-mono text-xs text-muted-foreground">
-              Rate: 1¥ = ₹{rate} · Total debit from Wise: {yen(sentN + (parseInt(fee || "0", 10) || 0))}
+              Rate: ₹{rate} per ¥ (on net {yen(netSent)} after {yen(feeN)} fee) · Total debit from Wise: {yen(sentN + feeN)}
             </p>
           )}
         </div>

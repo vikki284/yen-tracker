@@ -2,13 +2,14 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
-import { LogOut, LayoutDashboard, Receipt, FileText, BarChart3, Send } from "lucide-react";
+import { LogOut, LayoutDashboard, Receipt, FileText, BarChart3, Send, Wallet } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard },
   { to: "/expenses", label: "Expenses", icon: FileText },
   { to: "/receipts", label: "Receipts", icon: Receipt },
   { to: "/wise", label: "Wise", icon: Send },
+  { to: "/salary", label: "Salary", icon: Wallet },
   { to: "/reports", label: "Reports", icon: BarChart3 },
 ] as const;
 

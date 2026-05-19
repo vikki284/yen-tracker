@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { getAccounts, getExpenses, getReceipts } from "@/lib/db";
 import { yen, dateLabel } from "@/lib/format";
-import { NewExpenseDialog } from "@/components/NewExpenseDialog";
 import { ArrowUpRight, Receipt as ReceiptIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -28,14 +27,11 @@ function Dashboard() {
 
   return (
     <div className="space-y-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-            {now.toLocaleDateString("en-US", { weekday: "long" })} · {dateLabel(now)}
-          </p>
-          <h1 className="font-display text-5xl font-bold tracking-tight mt-1">Overview</h1>
-        </div>
-        <NewExpenseDialog />
+      <header>
+        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+          {now.toLocaleDateString("en-US", { weekday: "long" })} · {dateLabel(now)}
+        </p>
+        <h1 className="font-display text-5xl font-bold tracking-tight mt-1">Overview</h1>
       </header>
 
       <section>
@@ -43,18 +39,28 @@ function Dashboard() {
         <div className="grid sm:grid-cols-2 gap-4">
           {accounts.data?.map((a) => {
             const spent = byAccount.get(a.id) ?? 0;
+            const isCredit = a.bank_type === "paypay_credit";
             return (
-              <div key={a.id} className="rounded-lg border border-border bg-card p-6 shadow-paper relative overflow-hidden">
+              <Link
+                key={a.id}
+                to="/accounts/$accountId"
+                params={{ accountId: a.id }}
+                className="rounded-lg border border-border bg-card p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition"
+              >
                 <div className="absolute inset-x-0 top-0 h-1" style={{ background: a.color }} />
                 <div className="flex items-center justify-between">
                   <div className="font-display text-xl font-semibold">{a.name}</div>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{a.bank_type}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
+                    {a.bank_type} <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition" />
+                  </span>
                 </div>
                 <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(a.balance_yen)}</p>
                 <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                  This month · {yen(spent)} spent
+                  {isCredit
+                    ? `Credit limit · ${yen(a.credit_limit_yen)}`
+                    : `This month · ${yen(spent)} spent`}
                 </p>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -84,7 +90,7 @@ function Dashboard() {
               );
             })}
             {expenses.data?.length === 0 && (
-              <li className="py-12 text-center text-sm text-muted-foreground">No expenses yet. Log your first one above.</li>
+              <li className="py-12 text-center text-sm text-muted-foreground">No expenses yet. Open an account to log one.</li>
             )}
           </ul>
           <div className="mt-6 border-t border-dashed border-foreground/20 pt-4 flex justify-between font-mono text-sm">

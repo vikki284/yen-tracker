@@ -7,11 +7,96 @@ export const monthLabel = (d: Date) =>
 export const dateLabel = (s: string | Date) =>
   new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-export const CATEGORIES = [
-  "groceries", "dining", "transit", "utilities", "rent", "shopping",
-  "entertainment", "health", "convenience", "wise", "mom", "dad", "preethu", "other",
-] as const;
-
 export const inr = (n: number | null | undefined) =>
   n == null ? "—" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
-export type Category = (typeof CATEGORIES)[number];
+
+// Per-account category sets
+export const CATEGORIES_BY_BANK: Record<string, string[]> = {
+  aichi: ["wise", "rakuten", "paypay", "sim", "gym", "other"],
+  rakuten: ["aeon", "daiso", "dinner", "groceries", "transit", "shopping", "other"],
+  wise: ["mom", "dad", "bro", "self", "others"],
+  paypay_credit: ["groceries", "dining", "shopping", "transit", "entertainment", "other"],
+};
+
+export const DEFAULT_CATEGORIES = ["groceries", "dining", "shopping", "transit", "entertainment", "other"];
+
+export const CATEGORIES = Array.from(
+  new Set(Object.values(CATEGORIES_BY_BANK).flat()),
+) as readonly string[];
+
+export type Category = string;
+
+export function categoriesFor(bankType?: string | null): string[] {
+  if (!bankType) return DEFAULT_CATEGORIES;
+  return CATEGORIES_BY_BANK[bankType] ?? DEFAULT_CATEGORIES;
+}
+
+// Categories on Aichi that auto-transfer to another bank
+export const AICHI_TRANSFER_CATEGORIES = new Set([
+  "wise", "rakuten", "mom", "dad", "bro", "self", "others", "preethu",
+]);
+
+// Japan public holidays 2026 & 2027 (YYYY-MM-DD)
+export const JP_HOLIDAYS = new Set<string>([
+  // 2026
+  "2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29",
+  "2026-05-03","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11",
+  "2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23",
+  // 2027
+  "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-21","2027-03-22",
+  "2027-04-29","2027-05-03","2027-05-04","2027-05-05","2027-07-19","2027-08-11",
+  "2027-09-20","2027-09-23","2027-10-11","2027-11-03","2027-11-23",
+]);
+
+function iso(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function isWorkingDay(d: Date): boolean {
+  const day = d.getDay();
+  if (day === 0 || day === 6) return false;
+  return !JP_HOLIDAYS.has(iso(d));
+}
+
+export function prevWorkingDay(d: Date): Date {
+  const r = new Date(d);
+  while (!isWorkingDay(r)) r.setDate(r.getDate() - 1);
+  return r;
+}
+
+export function countWorkingDays(start: Date, end: Date): number {
+  let n = 0;
+  const d = new Date(start);
+  while (d <= end) {
+    if (isWorkingDay(d)) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}
+
+// PayPay Credit: spend in month M → billed on the 28th of M+1, shift to prev working day
+export function paypayBillDate(spendDate: Date | string): Date {
+  const d = new Date(spendDate);
+  const bill = new Date(d.getFullYear(), d.getMonth() + 1, 28);
+  return prevWorkingDay(bill);
+}
+
+export function billMonthKey(spendDate: Date | string): string {
+  const b = paypayBillDate(spendDate);
+  return `${b.getFullYear()}-${String(b.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Salary period: 16th of (payMonth - 1) → 15th of payMonth, paid on 28th (or prev working day)
+export function salaryPeriod(payMonth: Date) {
+  const y = payMonth.getFullYear();
+  const m = payMonth.getMonth();
+  const start = new Date(y, m - 1, 16);
+  const end = new Date(y, m, 15);
+  const payDate = prevWorkingDay(new Date(y, m, 28));
+  return { start, end, payDate, workingDays: countWorkingDays(start, end) };
+}
+
+export const isoDate = iso;

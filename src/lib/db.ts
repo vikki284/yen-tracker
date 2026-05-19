@@ -6,6 +6,7 @@ export type Account = {
   bank_type: string;
   color: string;
   balance_yen: number;
+  credit_limit_yen: number;
 };
 
 export type Expense = {
@@ -13,6 +14,8 @@ export type Expense = {
   account_id: string;
   receipt_id: string | null;
   amount_yen: number;
+  charge_yen: number;
+  payment_method: string;
   category: string;
   description: string | null;
   expense_date: string;
@@ -38,13 +41,17 @@ export type Receipt = {
 export async function getAccounts(): Promise<Account[]> {
   const { data, error } = await supabase.from("accounts").select("*").order("created_at");
   if (error) throw error;
-  return data as Account[];
+  return (data as any[]).map((a) => ({ ...a, credit_limit_yen: a.credit_limit_yen ?? 0 })) as Account[];
 }
 
 export async function getExpenses(): Promise<Expense[]> {
-  const { data, error } = await supabase.from("expenses").select("*").order("expense_date", { ascending: false }).limit(500);
+  const { data, error } = await supabase.from("expenses").select("*").order("expense_date", { ascending: false }).limit(1000);
   if (error) throw error;
-  return data as Expense[];
+  return (data as any[]).map((e) => ({
+    ...e,
+    charge_yen: e.charge_yen ?? 0,
+    payment_method: e.payment_method ?? "debit",
+  })) as Expense[];
 }
 
 export async function getReceipts(): Promise<Receipt[]> {
@@ -87,4 +94,31 @@ export async function getWiseTransfers(): Promise<WiseTransfer[]> {
   const { data, error } = await (supabase as any).from("wise_transfers").select("*").order("transfer_date", { ascending: false }).limit(500);
   if (error) throw error;
   return (data ?? []).map((t: any) => ({ ...t, inr_received: Number(t.inr_received) })) as WiseTransfer[];
+}
+
+export type SalaryEntry = {
+  id: string;
+  pay_date: string;
+  period_start: string;
+  period_end: string;
+  working_days: number;
+  base_pay: number;
+  overtime_pay: number;
+  health_insurance: number;
+  pension: number;
+  employment_insurance: number;
+  tax: number;
+  lunch_days: number;
+  lunch_per_day: number;
+  dorm: number;
+  fixed_deduction: number;
+  net_yen: number;
+  note: string | null;
+  created_at: string;
+};
+
+export async function getSalaryEntries(): Promise<SalaryEntry[]> {
+  const { data, error } = await (supabase as any).from("salary_entries").select("*").order("pay_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as SalaryEntry[];
 }
