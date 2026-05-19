@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { getSalaryEntries, type SalaryEntry } from "@/lib/db";
@@ -168,7 +168,7 @@ function NewSalaryDialog() {
   }, [payMonth]);
 
   // Auto-update working days when month changes
-  useMemo(() => setWorkingDays(period.workingDays.toString()), [period.workingDays]);
+  useEffect(() => { setWorkingDays(period.workingDays.toString()); }, [period.workingDays]);
 
   const parsed = {
     base_pay: parseInt(basePay || "0", 10) || 0,
