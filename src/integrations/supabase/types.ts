@@ -20,6 +20,7 @@ export type Database = {
           bank_type: string
           color: string
           created_at: string
+          credit_limit_yen: number
           id: string
           name: string
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           bank_type?: string
           color?: string
           created_at?: string
+          credit_limit_yen?: number
           id?: string
           name: string
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           bank_type?: string
           color?: string
           created_at?: string
+          credit_limit_yen?: number
           id?: string
           name?: string
           user_id?: string
@@ -49,10 +52,12 @@ export type Database = {
           account_id: string
           amount_yen: number
           category: string
+          charge_yen: number
           created_at: string
           description: string | null
           expense_date: string
           id: string
+          payment_method: string
           receipt_id: string | null
           user_id: string
         }
@@ -60,10 +65,12 @@ export type Database = {
           account_id: string
           amount_yen: number
           category?: string
+          charge_yen?: number
           created_at?: string
           description?: string | null
           expense_date?: string
           id?: string
+          payment_method?: string
           receipt_id?: string | null
           user_id: string
         }
@@ -71,10 +78,12 @@ export type Database = {
           account_id?: string
           amount_yen?: number
           category?: string
+          charge_yen?: number
           created_at?: string
           description?: string | null
           expense_date?: string
           id?: string
+          payment_method?: string
           receipt_id?: string | null
           user_id?: string
         }
@@ -165,6 +174,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      salary_entries: {
+        Row: {
+          base_pay: number
+          created_at: string
+          dorm: number
+          employment_insurance: number
+          fixed_deduction: number
+          health_insurance: number
+          id: string
+          lunch_days: number
+          lunch_per_day: number
+          net_yen: number
+          note: string | null
+          overtime_pay: number
+          pay_date: string
+          pension: number
+          period_end: string
+          period_start: string
+          tax: number
+          user_id: string
+          working_days: number
+        }
+        Insert: {
+          base_pay?: number
+          created_at?: string
+          dorm?: number
+          employment_insurance?: number
+          fixed_deduction?: number
+          health_insurance?: number
+          id?: string
+          lunch_days?: number
+          lunch_per_day?: number
+          net_yen?: number
+          note?: string | null
+          overtime_pay?: number
+          pay_date: string
+          pension?: number
+          period_end: string
+          period_start: string
+          tax?: number
+          user_id: string
+          working_days?: number
+        }
+        Update: {
+          base_pay?: number
+          created_at?: string
+          dorm?: number
+          employment_insurance?: number
+          fixed_deduction?: number
+          health_insurance?: number
+          id?: string
+          lunch_days?: number
+          lunch_per_day?: number
+          net_yen?: number
+          note?: string | null
+          overtime_pay?: number
+          pay_date?: string
+          pension?: number
+          period_end?: string
+          period_start?: string
+          tax?: number
+          user_id?: string
+          working_days?: number
+        }
+        Relationships: []
       }
       wise_recipients: {
         Row: {
