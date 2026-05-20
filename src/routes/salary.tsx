@@ -34,6 +34,7 @@ function netFromInputs(i: {
 function SalaryPage() {
   const qc = useQueryClient();
   const entries = useQuery({ queryKey: ["salary"], queryFn: getSalaryEntries });
+  const [detail, setDetail] = useState<SalaryEntry | null>(null);
 
   const del = useMutation({
     mutationFn: async (id: string) => {
@@ -95,7 +96,7 @@ function SalaryPage() {
             {(entries.data ?? []).map((e) => {
               const deductions = e.health_insurance + e.pension + e.employment_insurance + e.lunch_days * e.lunch_per_day + e.dorm + e.fixed_deduction;
               return (
-                <tr key={e.id} className="border-t border-border hover:bg-paper-mute/40">
+                <tr key={e.id} className="border-t border-border hover:bg-paper-mute/40 cursor-pointer" onClick={() => setDetail(e)}>
                   <td className="p-3 font-mono text-xs">{dateLabel(e.pay_date)}</td>
                   <td className="p-3 font-mono text-xs text-muted-foreground">{dateLabel(e.period_start)} → {dateLabel(e.period_end)}</td>
                   <td className="p-3 text-right font-mono tabular-nums">{e.working_days}</td>
@@ -103,7 +104,7 @@ function SalaryPage() {
                   <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">{yen(deductions)}</td>
                   <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">{yen(e.tax)}</td>
                   <td className="p-3 text-right font-mono tabular-nums font-semibold">{yen(e.net_yen)}</td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right" onClick={(ev) => ev.stopPropagation()}>
                     <Button size="icon" variant="ghost" onClick={() => del.mutate(e.id)} aria-label="Delete">
                       <Trash2 className="size-4" />
                     </Button>
@@ -141,6 +142,29 @@ function SalaryPage() {
           </div>
         </section>
       )}
+      <Dialog open={!!detail} onOpenChange={(v) => !v && setDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle className="font-display">{detail && dateLabel(detail.pay_date)} — slip detail</DialogTitle></DialogHeader>
+          {detail && (
+            <dl className="grid grid-cols-2 gap-y-1.5 font-mono text-xs">
+              <dt className="text-muted-foreground">Period</dt><dd className="text-right">{dateLabel(detail.period_start)} → {dateLabel(detail.period_end)}</dd>
+              <dt className="text-muted-foreground">Working days</dt><dd className="text-right tabular-nums">{detail.working_days}</dd>
+              <dt className="text-muted-foreground">Base pay</dt><dd className="text-right tabular-nums">{yen(detail.base_pay)}</dd>
+              <dt className="text-muted-foreground">Overtime</dt><dd className="text-right tabular-nums">{yen(detail.overtime_pay)}</dd>
+              <dt className="pt-2 border-t border-dashed border-foreground/20 mt-2 text-muted-foreground">Health ins.</dt><dd className="pt-2 border-t border-dashed border-foreground/20 mt-2 text-right tabular-nums">−{yen(detail.health_insurance)}</dd>
+              <dt className="text-muted-foreground">Pension</dt><dd className="text-right tabular-nums">−{yen(detail.pension)}</dd>
+              <dt className="text-muted-foreground">Employment ins.</dt><dd className="text-right tabular-nums">−{yen(detail.employment_insurance)}</dd>
+              <dt className="text-muted-foreground">Tax</dt><dd className="text-right tabular-nums">−{yen(detail.tax)}</dd>
+              <dt className="text-muted-foreground">Lunch ({detail.lunch_days} × ¥{detail.lunch_per_day})</dt><dd className="text-right tabular-nums">−{yen(detail.lunch_days * detail.lunch_per_day)}</dd>
+              <dt className="text-muted-foreground">Dorm</dt><dd className="text-right tabular-nums">−{yen(detail.dorm)}</dd>
+              <dt className="text-muted-foreground">Other (100+640)</dt><dd className="text-right tabular-nums">−{yen(detail.fixed_deduction)}</dd>
+              <dt className="pt-2 border-t border-foreground/30 mt-2 font-semibold text-foreground">Net to Aichi</dt>
+              <dd className="pt-2 border-t border-foreground/30 mt-2 text-right tabular-nums font-semibold">{yen(detail.net_yen)}</dd>
+              {detail.note && (<><dt className="text-muted-foreground mt-2">Note</dt><dd className="text-right mt-2">{detail.note}</dd></>)}
+            </dl>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
