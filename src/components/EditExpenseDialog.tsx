@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type Expense, updateExpenseMeta } from "@/lib/db";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,15 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: {
   onOpenChange: (v: boolean) => void;
 }) {
   const qc = useQueryClient();
-  const [description, setDescription] = useState(expense?.description ?? "");
-  const [date, setDate] = useState(expense?.expense_date ?? "");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState("");
 
-  // sync when expense changes
-  if (expense && expense.id !== (lastIdRef.id ?? "")) {
-    lastIdRef.id = expense.id;
-    setDescription(expense.description ?? "");
-    setDate(expense.expense_date);
-  }
+  useEffect(() => {
+    if (expense) {
+      setDescription(expense.description ?? "");
+      setDate(expense.expense_date);
+    }
+  }, [expense?.id]);
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -37,7 +37,6 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: {
     onError: (e) => toast.error((e as Error).message),
   });
 
-  if (!expense) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -59,11 +58,9 @@ export function EditExpenseDialog({ expense, open, onOpenChange }: {
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => mut.mutate()} disabled={mut.isPending}>{mut.isPending ? "Saving…" : "Save"}</Button>
+          <Button onClick={() => mut.mutate()} disabled={mut.isPending || !expense}>{mut.isPending ? "Saving…" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-const lastIdRef: { id: string | null } = { id: null };
