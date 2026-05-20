@@ -24,6 +24,7 @@ function ReportsPage() {
     const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
     const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
     const inMonth = (expenses.data ?? []).filter((e) => {
+      if (e.is_mirror || e.is_settlement || e.payment_method !== "debit") return false;
       const d = new Date(e.expense_date); return d >= start && d < end;
     });
     const days = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();

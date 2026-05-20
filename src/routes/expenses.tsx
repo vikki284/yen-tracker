@@ -36,6 +36,7 @@ function ExpensesPage() {
 
   const filtered = useMemo(() => {
     return (expenses.data ?? []).filter((e) => {
+      if (e.is_mirror) return false;
       if (acct !== "all" && e.account_id !== acct) return false;
       if (cat !== "all" && e.category !== cat) return false;
       if (q && !(e.description ?? "").toLowerCase().includes(q.toLowerCase())) return false;
@@ -43,7 +44,9 @@ function ExpensesPage() {
     });
   }, [expenses.data, acct, cat, q]);
 
-  const total = filtered.reduce((a, b) => a + b.amount_yen, 0);
+  const total = filtered
+    .filter((e) => e.payment_method === "debit" && !e.is_settlement)
+    .reduce((a, b) => a + b.amount_yen, 0);
 
   return (
     <div className="space-y-8">

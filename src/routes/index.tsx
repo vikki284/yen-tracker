@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { getAccounts, getExpenses, getReceipts } from "@/lib/db";
+import { getAccounts, getExpenses, getReceipts, isRealDebit } from "@/lib/db";
 import { yen, dateLabel } from "@/lib/format";
 import { ArrowUpRight, Receipt as ReceiptIcon } from "lucide-react";
 
@@ -18,11 +18,11 @@ function Dashboard() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthSpend = (expenses.data ?? [])
-    .filter((e) => new Date(e.expense_date) >= monthStart)
+    .filter((e) => isRealDebit(e) && new Date(e.expense_date) >= monthStart)
     .reduce((a, b) => a + b.amount_yen, 0);
 
   const byAccount = new Map<string, number>();
-  (expenses.data ?? []).filter((e) => new Date(e.expense_date) >= monthStart)
+  (expenses.data ?? []).filter((e) => isRealDebit(e) && new Date(e.expense_date) >= monthStart)
     .forEach((e) => byAccount.set(e.account_id, (byAccount.get(e.account_id) ?? 0) + e.amount_yen));
 
   return (
@@ -75,8 +75,9 @@ function Dashboard() {
             </Link>
           </div>
           <ul className="divide-y divide-border">
-            {(expenses.data ?? []).slice(0, 8).map((e) => {
+            {(expenses.data ?? []).filter((e) => !e.is_mirror).slice(0, 8).map((e) => {
               const acct = accounts.data?.find((a) => a.id === e.account_id);
+              const isCred = e.payment_method === "credit";
               return (
                 <li key={e.id} className="flex items-center justify-between py-3">
                   <div className="min-w-0">
@@ -85,7 +86,7 @@ function Dashboard() {
                       {dateLabel(e.expense_date)} · {acct?.name ?? "—"} · {e.category}
                     </div>
                   </div>
-                  <div className="font-mono tabular-nums">{yen(e.amount_yen)}</div>
+                  <div className={`font-mono tabular-nums ${isCred ? "text-emerald-700" : ""}`}>{isCred ? "+" : "−"}{yen(e.amount_yen)}</div>
                 </li>
               );
             })}
