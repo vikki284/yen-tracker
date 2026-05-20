@@ -49,7 +49,6 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
   const isAichiTransfer = acct?.bank_type === "aichi" && AICHI_TRANSFER_CATEGORIES.has(currentCategory);
   const showCharge = acct?.bank_type === "aichi" && (currentCategory === "rakuten" || currentCategory === "wise");
   const isCreditAccount = acct?.bank_type === "paypay_credit";
-  const effectiveMethod = isCreditAccount ? "credit" : paymentMethod;
 
   const mut = useMutation({
     mutationFn: async () => {
@@ -66,7 +65,7 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
         receipt_id: defaults?.receipt_id ?? null,
         amount_yen: amt,
         charge_yen: fee,
-        payment_method: effectiveMethod,
+        payment_method: paymentMethod,
         category: currentCategory,
         description: description || null,
         expense_date: date,
@@ -135,37 +134,39 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
               <Label className="text-xs uppercase tracking-widest font-mono">Transfer charge (¥)</Label>
               <Input inputMode="numeric" value={charge} onChange={(e) => setCharge(e.target.value.replace(/[^\d]/g, ""))} placeholder="0" />
               <p className="font-mono text-[10px] text-muted-foreground">
-                Aichi will be debited {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
-                {" "}{currentCategory === "rakuten" ? "Rakuten" : "Wise"} credited {yen(parseInt(amount || "0", 10) || 0)}
+                Aichi − {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
+                {" "}{currentCategory === "rakuten" ? "Rakuten" : "Wise"} + {yen(parseInt(amount || "0", 10) || 0)} (auto-mirrored)
               </p>
             </div>
           )}
-          {!isCreditAccount && (
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-widest font-mono">Payment method</Label>
-              <div className="flex gap-2">
-                {(["debit", "credit"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setPaymentMethod(m)}
-                    className={`flex-1 rounded-md border px-3 py-2 text-sm capitalize transition ${
-                      paymentMethod === m
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border bg-card hover:bg-paper-mute"
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest font-mono">
+              {isCreditAccount ? "PayPay action" : "Type"}
+            </Label>
+            <div className="flex gap-2">
+              {(["debit", "credit"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPaymentMethod(m)}
+                  className={`flex-1 rounded-md border px-3 py-2 text-sm capitalize transition ${
+                    paymentMethod === m
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-card hover:bg-paper-mute"
+                  }`}
+                >
+                  {isCreditAccount
+                    ? (m === "debit" ? "Charge (owe more)" : "Prepay (owe less)")
+                    : (m === "debit" ? "Debit (− balance)" : "Credit (+ balance)")}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
           <div className="space-y-2">
             <Label>Note</Label>
             <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Lunch at the soba place" />
           </div>
-          {amount && <p className="font-mono text-xs text-muted-foreground">Preview: {yen(parseInt(amount, 10))} · {effectiveMethod}</p>}
+          {amount && <p className="font-mono text-xs text-muted-foreground">Preview: {yen(parseInt(amount, 10))} · {paymentMethod}</p>}
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
