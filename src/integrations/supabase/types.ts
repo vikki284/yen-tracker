@@ -23,6 +23,7 @@ export type Database = {
           credit_limit_yen: number
           id: string
           name: string
+          opening_balance_yen: number
           user_id: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           credit_limit_yen?: number
           id?: string
           name: string
+          opening_balance_yen?: number
           user_id: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           credit_limit_yen?: number
           id?: string
           name?: string
+          opening_balance_yen?: number
           user_id?: string
         }
         Relationships: []
@@ -57,6 +60,9 @@ export type Database = {
           description: string | null
           expense_date: string
           id: string
+          is_mirror: boolean
+          is_settlement: boolean
+          parent_expense_id: string | null
           payment_method: string
           receipt_id: string | null
           user_id: string
@@ -70,6 +76,9 @@ export type Database = {
           description?: string | null
           expense_date?: string
           id?: string
+          is_mirror?: boolean
+          is_settlement?: boolean
+          parent_expense_id?: string | null
           payment_method?: string
           receipt_id?: string | null
           user_id: string
@@ -83,6 +92,9 @@ export type Database = {
           description?: string | null
           expense_date?: string
           id?: string
+          is_mirror?: boolean
+          is_settlement?: boolean
+          parent_expense_id?: string | null
           payment_method?: string
           receipt_id?: string | null
           user_id?: string
@@ -93,6 +105,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_parent_expense_id_fkey"
+            columns: ["parent_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
             referencedColumns: ["id"]
           },
           {
@@ -317,7 +336,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      recompute_balances: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
