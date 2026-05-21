@@ -15,7 +15,9 @@ export const CATEGORIES_BY_BANK: Record<string, string[]> = {
   aichi: ["wise", "rakuten", "paypay", "sim", "gym", "other"],
   rakuten: ["aeon", "daiso", "dinner", "groceries", "transit", "shopping", "other"],
   wise: ["mom", "dad", "bro", "self", "others"],
+  paypay: ["groceries", "dining", "shopping", "transit", "entertainment", "other"],
   paypay_credit: ["groceries", "dining", "shopping", "transit", "entertainment", "other"],
+  cash: ["food", "transit", "shopping", "entertainment", "misc", "other"],
 };
 
 export const DEFAULT_CATEGORIES = ["groceries", "dining", "shopping", "transit", "entertainment", "other"];
@@ -31,18 +33,22 @@ export function categoriesFor(bankType?: string | null): string[] {
   return CATEGORIES_BY_BANK[bankType] ?? DEFAULT_CATEGORIES;
 }
 
-// Categories on Aichi that auto-transfer to another bank
+// Aichi categories that auto-transfer + charge applies
 export const AICHI_TRANSFER_CATEGORIES = new Set([
-  "wise", "rakuten", "mom", "dad", "bro", "self", "others", "preethu",
+  "wise", "rakuten", "paypay", "mom", "dad", "bro", "self", "others", "preethu",
 ]);
+
+// Aichi categories that need a charge prompt
+export const AICHI_CHARGE_CATEGORIES = new Set(["rakuten", "wise", "paypay"]);
+
+// Wise recipient categories (used to display Aichi→Mom etc. in wise log)
+export const WISE_RECIPIENT_CATEGORIES = new Set(["mom", "dad", "bro", "self", "others", "preethu"]);
 
 // Japan public holidays 2026 & 2027 (YYYY-MM-DD)
 export const JP_HOLIDAYS = new Set<string>([
-  // 2026
   "2026-01-01","2026-01-12","2026-02-11","2026-02-23","2026-03-20","2026-04-29",
   "2026-05-03","2026-05-04","2026-05-05","2026-05-06","2026-07-20","2026-08-11",
   "2026-09-21","2026-09-22","2026-09-23","2026-10-12","2026-11-03","2026-11-23",
-  // 2027
   "2027-01-01","2027-01-11","2027-02-11","2027-02-23","2027-03-21","2027-03-22",
   "2027-04-29","2027-05-03","2027-05-04","2027-05-05","2027-07-19","2027-08-11",
   "2027-09-20","2027-09-23","2027-10-11","2027-11-03","2027-11-23",
@@ -87,6 +93,14 @@ export function paypayBillDate(spendDate: Date | string): Date {
 export function billMonthKey(spendDate: Date | string): string {
   const b = paypayBillDate(spendDate);
   return `${b.getFullYear()}-${String(b.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// A settlement paid between the 15th and 20th of bill-month M counts toward bill M
+export function settlementBillKey(payDate: Date | string): string | null {
+  const d = new Date(payDate);
+  const day = d.getDate();
+  if (day < 15 || day > 20) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 // Salary period: 16th of (payMonth - 1) → 15th of payMonth, paid on 28th (or prev working day)
