@@ -143,6 +143,10 @@ export type SalaryEntry = {
   lunch_per_day: number;
   dorm: number;
   fixed_deduction: number;
+  extra_additions: number;
+  extra_deductions: number;
+  is_bonus: boolean;
+  extras_note: string | null;
   net_yen: number;
   note: string | null;
   created_at: string;
@@ -151,7 +155,13 @@ export type SalaryEntry = {
 export async function getSalaryEntries(): Promise<SalaryEntry[]> {
   const { data, error } = await (supabase as any).from("salary_entries").select("*").order("pay_date", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as SalaryEntry[];
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    extra_additions: r.extra_additions ?? 0,
+    extra_deductions: r.extra_deductions ?? 0,
+    is_bonus: !!r.is_bonus,
+    extras_note: r.extras_note ?? null,
+  })) as SalaryEntry[];
 }
 
 // Helpers for spend calculations (exclude mirror credit-ins, settle-ups, and any credit-type entry)
