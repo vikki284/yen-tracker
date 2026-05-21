@@ -36,7 +36,7 @@ export function SettleUpDialog({ paypayAccountId, suggested }: { paypayAccountId
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(`Settled ${yen(parseInt(amount, 10))} · Aichi debited`);
+      toast.success(`Settled ${yen(parseInt(amount, 10))} · PayPay reduced`);
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
       setOpen(false);
@@ -65,10 +65,10 @@ export function SettleUpDialog({ paypayAccountId, suggested }: { paypayAccountId
           </div>
           <div className="space-y-2">
             <Label>Note (optional)</Label>
-            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="May bill" />
+            <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="May bill — paid from Cash / Rakuten / etc." />
           </div>
           <p className="font-mono text-[11px] text-muted-foreground">
-            PayPay owed: − {yen(parseInt(amount || "0", 10) || 0)} · Aichi: − {yen(parseInt(amount || "0", 10) || 0)} (auto)
+            PayPay owed: − {yen(parseInt(amount || "0", 10) || 0)} · Pay between day 15–20 of bill month to apply to that bill. No account is auto-debited; log the source separately.
           </p>
         </div>
         <DialogFooter>

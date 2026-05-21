@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { categoriesFor, yen, AICHI_TRANSFER_CATEGORIES } from "@/lib/format";
+import { categoriesFor, yen, AICHI_TRANSFER_CATEGORIES, AICHI_CHARGE_CATEGORIES } from "@/lib/format";
 import { getAccounts, type Account } from "@/lib/db";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -47,7 +47,10 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
   const cats = categoriesFor(acct?.bank_type);
   const currentCategory = category || cats[0] || "other";
   const isAichiTransfer = acct?.bank_type === "aichi" && AICHI_TRANSFER_CATEGORIES.has(currentCategory);
-  const showCharge = acct?.bank_type === "aichi" && (currentCategory === "rakuten" || currentCategory === "wise");
+  // Charge applies for aichi transfers and for cash (user wanted charge on cash too)
+  const showCharge =
+    (acct?.bank_type === "aichi" && AICHI_CHARGE_CATEGORIES.has(currentCategory)) ||
+    acct?.bank_type === "cash";
   const isCreditAccount = acct?.bank_type === "paypay_credit";
 
   const mut = useMutation({
@@ -131,12 +134,16 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
           </div>
           {showCharge && (
             <div className="space-y-2 rounded-md border border-dashed border-foreground/30 bg-paper-mute/40 p-3">
-              <Label className="text-xs uppercase tracking-widest font-mono">Transfer charge (¥)</Label>
+              <Label className="text-xs uppercase tracking-widest font-mono">
+                {acct?.bank_type === "cash" ? "Charge / fee (¥)" : "Transfer charge (¥)"}
+              </Label>
               <Input inputMode="numeric" value={charge} onChange={(e) => setCharge(e.target.value.replace(/[^\d]/g, ""))} placeholder="0" />
-              <p className="font-mono text-[10px] text-muted-foreground">
-                Aichi − {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
-                {" "}{currentCategory === "rakuten" ? "Rakuten" : "Wise"} + {yen(parseInt(amount || "0", 10) || 0)} (auto-mirrored)
-              </p>
+              {isAichiTransfer && (
+                <p className="font-mono text-[10px] text-muted-foreground">
+                  Aichi − {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
+                  {" "}{currentCategory} + {yen(parseInt(amount || "0", 10) || 0)} (auto-mirrored)
+                </p>
+              )}
             </div>
           )}
           <div className="space-y-2">
