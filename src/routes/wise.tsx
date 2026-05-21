@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { getAccounts, getWiseRecipients, getWiseTransfers, type WiseRecipient } from "@/lib/db";
-import { yen, inr, dateLabel } from "@/lib/format";
+import { getAccounts, getWiseRecipients, getWiseTransfers, getExpenses, type WiseRecipient } from "@/lib/db";
+import { yen, inr, dateLabel, WISE_RECIPIENT_CATEGORIES } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,11 @@ function WisePage() {
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const recipients = useQuery({ queryKey: ["wise_recipients"], queryFn: getWiseRecipients });
   const transfers = useQuery({ queryKey: ["wise_transfers"], queryFn: getWiseTransfers });
+  const expenses = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
 
   const wiseAcct = accounts.data?.find((a) => a.bank_type === "wise");
 
+  // Totals SENT HOME: only money that was converted & received (wise_transfers)
   const totalsByRecipient = useMemo(() => {
     const m = new Map<string, { yen: number; inr: number }>();
     for (const t of transfers.data ?? []) {
@@ -35,6 +37,27 @@ function WisePage() {
     }
     return m;
   }, [transfers.data]);
+
+  // Pending: Aichi expenses with mom/dad/bro/self/others categories (money queued for transfer)
+  const pendingFromAichi = useMemo(() => {
+    return (expenses.data ?? [])
+      .filter((e) => !e.is_mirror && !e.is_settlement && WISE_RECIPIENT_CATEGORIES.has(e.category))
+      .map((e) => {
+        const recipient = (recipients.data ?? []).find(
+          (r) => r.name.toLowerCase() === e.category.toLowerCase(),
+        );
+        return { expense: e, recipient };
+      });
+  }, [expenses.data, recipients.data]);
+
+  const totalSentHomeYen = useMemo(
+    () => (transfers.data ?? []).reduce((a, t) => a + t.amount_sent_yen, 0),
+    [transfers.data],
+  );
+  const totalSentHomeInr = useMemo(
+    () => (transfers.data ?? []).reduce((a, t) => a + t.inr_received, 0),
+    [transfers.data],
+  );
 
   const del = useMutation({
     mutationFn: async (id: string) => {
@@ -59,14 +82,27 @@ function WisePage() {
         <NewTransferDialog recipients={recipients.data ?? []} />
       </header>
 
-      <section className="rounded-lg border border-border bg-card p-6 shadow-paper">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-paper hidden">
         <div className="flex items-baseline justify-between">
           <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Wise balance</p>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Top up by logging an expense with note "wise"
-          </span>
         </div>
         <p className="font-display text-5xl font-bold tabular-nums mt-2">{yen(wiseAcct?.balance_yen ?? 0)}</p>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-6 shadow-paper">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Wise balance</p>
+          <p className="font-display text-4xl font-bold tabular-nums mt-2">{yen(wiseAcct?.balance_yen ?? 0)}</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+            Top up by logging an Aichi expense with category "wise"
+          </p>
+        </div>
+        <div className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper">
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] opacity-70">Total sent home</p>
+          <p className="font-display text-4xl font-bold tabular-nums mt-2">{yen(totalSentHomeYen)}</p>
+          <p className="font-mono text-sm tabular-nums mt-1 opacity-90">≈ {inr(totalSentHomeInr)}</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest opacity-60 mt-1">Converted &amp; received via Wise</p>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

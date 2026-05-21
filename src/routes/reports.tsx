@@ -45,6 +45,35 @@ function ReportsPage() {
     return { byDay, byCat, byAcct, total, txCount: inMonth.length };
   }, [expenses.data, accounts.data, cursor]);
 
+  // SIM + Gym by year-month (across all accounts)
+  const utilities = useMemo(() => {
+    const m = new Map<string, Map<string, { sim: number; gym: number }>>();
+    for (const e of expenses.data ?? []) {
+      if (e.is_mirror || e.is_settlement) continue;
+      if (e.category !== "sim" && e.category !== "gym") continue;
+      const y = e.expense_date.slice(0, 4);
+      const mo = e.expense_date.slice(5, 7);
+      if (!m.has(y)) m.set(y, new Map());
+      const yMap = m.get(y)!;
+      const cur = yMap.get(mo) ?? { sim: 0, gym: 0 };
+      if (e.category === "sim") cur.sim += e.amount_yen;
+      else cur.gym += e.amount_yen;
+      yMap.set(mo, cur);
+    }
+    return Array.from(m.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([year, yMap]) => ({
+        year,
+        months: Array.from({ length: 12 }, (_, i) => {
+          const k = String(i + 1).padStart(2, "0");
+          const v = yMap.get(k) ?? { sim: 0, gym: 0 };
+          return { month: k, ...v };
+        }),
+        simTotal: Array.from(yMap.values()).reduce((a, b) => a + b.sim, 0),
+        gymTotal: Array.from(yMap.values()).reduce((a, b) => a + b.gym, 0),
+      }));
+  }, [expenses.data]);
+
   const label = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
@@ -133,6 +162,43 @@ function ReportsPage() {
           </ul>
         </div>
       </section>
+
+      {utilities.length > 0 && (
+        <section className="rounded-lg border border-border bg-card p-6 shadow-paper">
+          <h2 className="font-display text-xl font-semibold mb-1">SIM & Gym — monthly by year</h2>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Recurring utilities across all accounts</p>
+          <div className="space-y-6">
+            {utilities.map((y) => (
+              <div key={y.year}>
+                <div className="flex items-baseline justify-between mb-2">
+                  <h3 className="font-display text-2xl font-bold">{y.year}</h3>
+                  <span className="font-mono text-xs text-muted-foreground tabular-nums">SIM {yen(y.simTotal)} · Gym {yen(y.gymTotal)} · Total {yen(y.simTotal + y.gymTotal)}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs min-w-[640px]">
+                    <thead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      <tr>
+                        <th className="text-left p-1.5">Cat</th>
+                        {y.months.map((m) => <th key={m.month} className="text-right p-1.5">{m.month}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-border">
+                        <td className="p-1.5 font-mono">SIM</td>
+                        {y.months.map((m) => <td key={m.month} className="text-right p-1.5 font-mono tabular-nums">{m.sim ? yen(m.sim) : "—"}</td>)}
+                      </tr>
+                      <tr className="border-t border-border">
+                        <td className="p-1.5 font-mono">Gym</td>
+                        {y.months.map((m) => <td key={m.month} className="text-right p-1.5 font-mono tabular-nums">{m.gym ? yen(m.gym) : "—"}</td>)}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
