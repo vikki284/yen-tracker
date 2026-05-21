@@ -6,7 +6,7 @@ import { NewExpenseDialog } from "@/components/NewExpenseDialog";
 import { SettleUpDialog } from "@/components/SettleUpDialog";
 import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { getAccounts, getExpenses, deleteExpense, recomputeBalances, setOpeningBalance, isRealDebit, type Expense } from "@/lib/db";
-import { yen, dateLabel, paypayBillDate, billMonthKey } from "@/lib/format";
+import { yen, dateLabel, paypayBillDate, billMonthKey, settlementBillKey } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Pencil, RefreshCw, Trash2 } from "lucide-react";
@@ -64,55 +64,45 @@ function AccountPage() {
   });
 
   const isCredit = acct?.bank_type === "paypay_credit";
-  const isAichi = acct?.bank_type === "aichi";
 
-  // PayPay credit bill grouping (only real charges count, not settlements/prepayments)
-  const billGroups = useMemo(() => {
-    if (!isCredit) return new Map<string, { label: string; date: Date; total: number }>();
-    const m = new Map<string, { label: string; date: Date; total: number }>();
+  // PayPay credit bill grouping (charges per bill month) and settlement allocation
+  const { unpaidBills, creditUsed, creditLeft } = useMemo(() => {
+    if (!isCredit) return { unpaidBills: [] as { label: string; date: Date; charges: number; prepaid: number; due: number }[], creditUsed: 0, creditLeft: 0 };
+    type Bill = { label: string; date: Date; charges: number; prepaid: number; due: number };
+    const m = new Map<string, Bill>();
+    // Group real charges by bill month
     for (const e of list) {
       if (e.is_settlement || e.is_mirror || e.payment_method !== "debit") continue;
       const key = billMonthKey(e.expense_date);
       const bd = paypayBillDate(e.expense_date);
       const prev = m.get(key) ?? {
         label: bd.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-        date: bd,
-        total: 0,
+        date: bd, charges: 0, prepaid: 0, due: 0,
       };
-      prev.total += e.amount_yen;
+      prev.charges += e.amount_yen;
       m.set(key, prev);
     }
-    return m;
-  }, [list, isCredit]);
+    // Allocate settlements made on day 15-20 of a bill-month to that month's bill
+    for (const e of list) {
+      if (!e.is_settlement && e.payment_method !== "credit") continue;
+      const key = settlementBillKey(e.expense_date);
+      if (!key) continue;
+      const bill = m.get(key);
+      if (bill) bill.prepaid += e.amount_yen;
+    }
+    for (const b of m.values()) b.due = Math.max(0, b.charges - b.prepaid);
+    const today = new Date();
+    const unpaid = Array.from(m.values()).filter((b) => b.date >= today && b.due > 0).sort((a, b) => +a.date - +b.date);
+    const used = acct?.balance_yen ?? 0;
+    const left = Math.max(0, (acct?.credit_limit_yen ?? 0) - used);
+    return { unpaidBills: unpaid, creditUsed: used, creditLeft: left };
+  }, [list, isCredit, acct]);
 
   const today = new Date();
-  const unpaidBills = useMemo(
-    () => Array.from(billGroups.values()).filter((b) => b.date >= today).sort((a, b) => +a.date - +b.date),
-    [billGroups, today],
-  );
-  const creditUsed = acct?.balance_yen ?? 0; // outstanding owed
-  const creditLeft = Math.max(0, (acct?.credit_limit_yen ?? 0) - creditUsed);
-
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const monthSpent = list
     .filter((e) => isRealDebit(e) && new Date(e.expense_date) >= monthStart)
     .reduce((a, b) => a + b.amount_yen, 0);
-
-  // Sim + Gym yearly aggregation (Aichi only)
-  const utilByYear = useMemo(() => {
-    if (!isAichi) return [] as { year: string; sim: number; gym: number }[];
-    const m = new Map<string, { sim: number; gym: number }>();
-    for (const e of list) {
-      if (e.is_mirror || e.is_settlement) continue;
-      if (e.category !== "sim" && e.category !== "gym") continue;
-      const y = e.expense_date.slice(0, 4);
-      const cur = m.get(y) ?? { sim: 0, gym: 0 };
-      if (e.category === "sim") cur.sim += e.amount_yen;
-      else cur.gym += e.amount_yen;
-      m.set(y, cur);
-    }
-    return Array.from(m.entries()).sort((a, b) => b[0].localeCompare(a[0])).map(([year, v]) => ({ year, ...v }));
-  }, [list, isAichi]);
 
   if (!acct) {
     return <div className="text-sm text-muted-foreground">Loading account…</div>;
@@ -162,11 +152,12 @@ function AccountPage() {
 
       {isCredit ? (
         <section className="grid md:grid-cols-3 gap-4">
-          <Card label="Credit limit" value={yen(acct.credit_limit_yen)} />
-          <Card label="Currently owed" value={yen(creditUsed)} />
           <Card label="Credit available" value={yen(creditLeft)} accent />
+          <Card label="Currently owed" value={yen(creditUsed)} />
+          <Card label="Credit limit" value={yen(acct.credit_limit_yen)} />
           <div className="md:col-span-3 rounded-lg border border-border bg-card p-5 shadow-paper">
             <h3 className="font-display text-lg font-bold mb-3">Upcoming bills</h3>
+            <p className="font-mono text-[10px] text-muted-foreground mb-3">Prepayments made between day 15 – 20 of a bill month reduce that month's bill.</p>
             {unpaidBills.length === 0 && <p className="text-sm text-muted-foreground">Nothing pending.</p>}
             <ul className="divide-y divide-border">
               {unpaidBills.map((b) => (
@@ -174,10 +165,11 @@ function AccountPage() {
                   <div>
                     <div className="font-medium">{b.label}</div>
                     <div className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                      Charges on {dateLabel(b.date)}
+                      Charges on {dateLabel(b.date)} · {yen(b.charges)} charges
+                      {b.prepaid > 0 && <span className="text-emerald-700"> · −{yen(b.prepaid)} prepaid</span>}
                     </div>
                   </div>
-                  <div className="font-mono tabular-nums font-semibold">{yen(b.total)}</div>
+                  <div className="font-mono tabular-nums font-semibold">{yen(b.due)}</div>
                 </li>
               ))}
             </ul>
@@ -187,27 +179,6 @@ function AccountPage() {
         <section className="grid md:grid-cols-2 gap-4">
           <Card label="This month spent (debits only)" value={yen(monthSpent)} />
           <Card label="Total logged entries" value={list.length.toString()} />
-        </section>
-      )}
-
-      {isAichi && utilByYear.length > 0 && (
-        <section className="rounded-lg border border-border bg-card p-5 shadow-paper">
-          <h3 className="font-display text-lg font-bold mb-3">SIM & Gym — yearly</h3>
-          <table className="w-full text-sm">
-            <thead className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              <tr><th className="text-left p-2">Year</th><th className="text-right p-2">SIM</th><th className="text-right p-2">Gym</th><th className="text-right p-2">Total</th></tr>
-            </thead>
-            <tbody>
-              {utilByYear.map((y) => (
-                <tr key={y.year} className="border-t border-border">
-                  <td className="p-2 font-mono">{y.year}</td>
-                  <td className="p-2 text-right font-mono tabular-nums">{yen(y.sim)}</td>
-                  <td className="p-2 text-right font-mono tabular-nums">{yen(y.gym)}</td>
-                  <td className="p-2 text-right font-mono tabular-nums font-semibold">{yen(y.sim + y.gym)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </section>
       )}
 

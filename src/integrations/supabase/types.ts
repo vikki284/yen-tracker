@@ -200,9 +200,13 @@ export type Database = {
           created_at: string
           dorm: number
           employment_insurance: number
+          extra_additions: number
+          extra_deductions: number
+          extras_note: string | null
           fixed_deduction: number
           health_insurance: number
           id: string
+          is_bonus: boolean
           lunch_days: number
           lunch_per_day: number
           net_yen: number
@@ -221,9 +225,13 @@ export type Database = {
           created_at?: string
           dorm?: number
           employment_insurance?: number
+          extra_additions?: number
+          extra_deductions?: number
+          extras_note?: string | null
           fixed_deduction?: number
           health_insurance?: number
           id?: string
+          is_bonus?: boolean
           lunch_days?: number
           lunch_per_day?: number
           net_yen?: number
@@ -242,9 +250,13 @@ export type Database = {
           created_at?: string
           dorm?: number
           employment_insurance?: number
+          extra_additions?: number
+          extra_deductions?: number
+          extras_note?: string | null
           fixed_deduction?: number
           health_insurance?: number
           id?: string
+          is_bonus?: boolean
           lunch_days?: number
           lunch_per_day?: number
           net_yen?: number

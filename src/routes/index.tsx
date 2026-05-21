@@ -40,6 +40,7 @@ function Dashboard() {
           {accounts.data?.map((a) => {
             const spent = byAccount.get(a.id) ?? 0;
             const isCredit = a.bank_type === "paypay_credit";
+            const remaining = isCredit ? Math.max(0, a.credit_limit_yen - a.balance_yen) : 0;
             return (
               <Link
                 key={a.id}
@@ -54,10 +55,12 @@ function Dashboard() {
                     {a.bank_type} <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition" />
                   </span>
                 </div>
-                <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(a.balance_yen)}</p>
+                <p className="mt-6 font-mono text-3xl font-medium tabular-nums">
+                  {isCredit ? yen(remaining) : yen(a.balance_yen)}
+                </p>
                 <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
                   {isCredit
-                    ? `Credit limit · ${yen(a.credit_limit_yen)}`
+                    ? `Available · limit ${yen(a.credit_limit_yen)} · owed ${yen(a.balance_yen)}`
                     : `This month · ${yen(spent)} spent`}
                 </p>
               </Link>
