@@ -230,6 +230,44 @@ function ReportsPage() {
           </div>
         </section>
       )}
+
+      <section className="rounded-lg border border-border bg-card p-6 shadow-paper">
+        <h2 className="font-display text-xl font-semibold mb-1">Receipt breakdown · {label}</h2>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-4">From scanned receipts this month</p>
+        {receiptBreakdown.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No scanned receipts this month.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {receiptBreakdown.map((c) => {
+              const isOpen = openCat === c.name;
+              return (
+                <li key={c.name} className="py-2">
+                  <button
+                    onClick={() => setOpenCat(isOpen ? null : c.name)}
+                    className="w-full flex items-center justify-between py-2 hover:bg-paper-mute/40 rounded px-2"
+                  >
+                    <span className="flex items-center gap-2 font-medium capitalize">
+                      <ChevronDown className={`size-4 transition ${isOpen ? "" : "-rotate-90"}`} />
+                      {c.name}
+                    </span>
+                    <span className="font-mono tabular-nums">{yen(c.total)}</span>
+                  </button>
+                  {isOpen && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {c.subs.map((s) => (
+                        <li key={s.name} className="flex justify-between font-mono text-xs text-muted-foreground py-0.5">
+                          <span className="capitalize">{s.name}</span>
+                          <span className="tabular-nums">{yen(s.total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
