@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { getAccounts, getExpenses } from "@/lib/db";
+import { getAccounts, getExpenses, getReceipts } from "@/lib/db";
 import { yen } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Reports — Yen Tracker" }] }),
@@ -17,8 +17,10 @@ const CAT_COLORS = ["#0d0d0d","#bf0000","#5c5c5c","#a89770","#3b3b3b","#8e8e8e",
 function ReportsPage() {
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
+  const receipts = useQuery({ queryKey: ["receipts"], queryFn: getReceipts });
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [openCat, setOpenCat] = useState<string | null>(null);
 
   const { byDay, byCat, byAcct, total, txCount } = useMemo(() => {
     const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
