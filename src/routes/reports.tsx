@@ -76,6 +76,35 @@ function ReportsPage() {
       }));
   }, [expenses.data]);
 
+  // Receipt item breakdown for the selected month
+  const receiptBreakdown = useMemo(() => {
+    const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    const inMonth = (receipts.data ?? []).filter((r) => {
+      const d = new Date(r.purchase_date ?? r.created_at);
+      return d >= start && d < end;
+    });
+    const cats = new Map<string, { total: number; subs: Map<string, number> }>();
+    for (const r of inMonth) {
+      for (const it of r.items ?? []) {
+        const cat = (it.category ?? "other").toString();
+        const sub = (it.subcategory ?? it.name ?? "—").toString();
+        const price = Number(it.price) || 0;
+        if (!cats.has(cat)) cats.set(cat, { total: 0, subs: new Map() });
+        const c = cats.get(cat)!;
+        c.total += price;
+        c.subs.set(sub, (c.subs.get(sub) ?? 0) + price);
+      }
+    }
+    return Array.from(cats.entries())
+      .map(([name, v]) => ({
+        name,
+        total: v.total,
+        subs: Array.from(v.subs.entries()).map(([n, t]) => ({ name: n, total: t })).sort((a, b) => b.total - a.total),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [receipts.data, cursor]);
+
   const label = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
