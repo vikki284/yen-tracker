@@ -54,10 +54,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Chōbo — Personal Finance for Japan" },
-      { name: "description", content: "Track expenses across your Japanese bank accounts, scan receipts, and read monthly reports." },
-      { property: "og:title", content: "Chōbo — Personal Finance for Japan" },
-      { property: "og:description", content: "Two-account tracker with receipt OCR." },
+      { title: "Yen Tracker — Personal Finance for Japan" },
+      { name: "description", content: "One app for all your banks, cards, receipts, salaries, and transfers — designed for everyday life in Japan." },
+      { property: "og:title", content: "Yen Tracker" },
+      { property: "og:description", content: "One app for all your banks, cards, receipts, salaries, and transfers — designed for everyday life in Japan." },
       { property: "og:type", content: "website" },
     ],
     links: [
