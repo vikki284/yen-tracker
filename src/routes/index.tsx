@@ -84,6 +84,21 @@ function Dashboard() {
               </Link>
             );
           })}
+          <Link
+            to="/wise"
+            className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition"
+          >
+            <div className="flex items-center justify-between">
+              <div className="font-display text-xl font-semibold inline-flex items-center gap-2"><Send className="size-4" /> Sent home</div>
+              <span className="font-mono text-[10px] uppercase tracking-widest opacity-70 inline-flex items-center gap-1">
+                wise · india <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition" />
+              </span>
+            </div>
+            <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(sentHomeYen)}</p>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-widest opacity-70 tabular-nums">
+              ≈ {inr(sentHomeInr)} · {transfers.data?.length ?? 0} transfers
+            </p>
+          </Link>
         </div>
       </section>
 
