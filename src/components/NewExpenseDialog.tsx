@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { categoriesFor, yen, AICHI_TRANSFER_CATEGORIES, AICHI_CHARGE_CATEGORIES } from "@/lib/format";
+import { categoriesForWithTransfers, isTransferCategory, yen } from "@/lib/format";
 import { getAccounts, type Account } from "@/lib/db";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -44,13 +44,11 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
     [accounts, accountId],
   );
 
-  const cats = categoriesFor(acct?.bank_type);
+  const cats = categoriesForWithTransfers(acct, (accounts ?? []) as Account[]);
   const currentCategory = category || cats[0] || "other";
-  const isAichiTransfer = acct?.bank_type === "aichi" && AICHI_TRANSFER_CATEGORIES.has(currentCategory);
-  // Charge applies for aichi transfers and for cash (user wanted charge on cash too)
-  const showCharge =
-    (acct?.bank_type === "aichi" && AICHI_CHARGE_CATEGORIES.has(currentCategory)) ||
-    acct?.bank_type === "cash";
+  const isTransfer = isTransferCategory(acct, currentCategory, (accounts ?? []) as Account[]);
+  // Show charge field for any transfer or for cash account
+  const showCharge = isTransfer || acct?.bank_type === "cash";
   const isCreditAccount = acct?.bank_type === "paypay_credit";
 
   const mut = useMutation({
@@ -76,7 +74,7 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(isAichiTransfer ? "Logged & balance transferred" : "Expense logged");
+      toast.success(isTransfer ? "Logged & balance transferred" : "Expense logged");
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["accounts"] });
       setOpen(false);
@@ -135,12 +133,12 @@ export function NewExpenseDialog({ trigger, defaults, lockAccount, onCreated }: 
           {showCharge && (
             <div className="space-y-2 rounded-md border border-dashed border-foreground/30 bg-paper-mute/40 p-3">
               <Label className="text-xs uppercase tracking-widest font-mono">
-                {acct?.bank_type === "cash" ? "Charge / fee (¥)" : "Transfer charge (¥)"}
+                {acct?.bank_type === "cash" && !isTransfer ? "Charge / fee (¥)" : "Transfer charge (¥)"}
               </Label>
               <Input inputMode="numeric" value={charge} onChange={(e) => setCharge(e.target.value.replace(/[^\d]/g, ""))} placeholder="0" />
-              {isAichiTransfer && (
+              {isTransfer && (
                 <p className="font-mono text-[10px] text-muted-foreground">
-                  Aichi − {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
+                  {acct?.name} − {yen((parseInt(amount || "0", 10) || 0) + (parseInt(charge || "0", 10) || 0))} ·
                   {" "}{currentCategory} + {yen(parseInt(amount || "0", 10) || 0)} (auto-mirrored)
                 </p>
               )}

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — Chōbo" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Yen Tracker" }] }),
   component: AuthPage,
 });
 
@@ -38,8 +38,14 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Account created — check your email if confirmation is required, then sign in.");
-        setMode("signin");
+        // Try to sign in immediately if email confirmation isn't required
+        const { error: siErr } = await supabase.auth.signInWithPassword({ email, password });
+        if (siErr) {
+          toast.success("Account created — check your email if confirmation is required, then sign in.");
+          setMode("signin");
+        } else {
+          navigate({ to: "/onboarding" });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -55,13 +61,13 @@ function AuthPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex flex-col justify-between bg-foreground text-background p-12">
-        <Link to="/auth" className="font-display text-3xl font-bold">帳簿 / Chōbo</Link>
+        <Link to="/auth" className="font-display text-3xl font-bold">¥ Yen Tracker</Link>
         <div>
           <p className="font-display text-5xl leading-[0.95] tracking-tight">
-            Two banks.<br/>One ledger.<br/>Every receipt.
+            All your money.<br/>One ledger.<br/>Every receipt.
           </p>
           <p className="mt-6 max-w-sm font-mono text-[11px] uppercase tracking-[0.2em] opacity-70">
-            A finance tracker built for everyday life in Japan — Aichi Bank, Rakuten Bank, and the convenience-store paper trail.
+            One app for all your banks, cards, receipts, salaries, and transfers — designed for everyday life in Japan.
           </p>
         </div>
         <div className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-60">

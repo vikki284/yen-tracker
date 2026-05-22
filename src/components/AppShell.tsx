@@ -35,8 +35,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border bg-paper/80 backdrop-blur sticky top-0 z-40">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <Link to="/" className="flex items-baseline gap-2">
-            <span className="font-display text-2xl font-bold tracking-tight">帳簿</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Chōbo</span>
+            <span className="font-display text-2xl font-bold tracking-tight">¥</span>
+            <span className="font-display text-xl font-semibold tracking-tight">Yen Tracker</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
             {NAV.map((n) => {

@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
-import { getAccounts, getExpenses } from "@/lib/db";
+import { getAccounts, getExpenses, getReceipts } from "@/lib/db";
 import { yen } from "@/lib/format";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports — Chōbo" }] }),
+  head: () => ({ meta: [{ title: "Reports — Yen Tracker" }] }),
   component: () => <AppShell><ReportsPage /></AppShell>,
 });
 
@@ -17,8 +17,10 @@ const CAT_COLORS = ["#0d0d0d","#bf0000","#5c5c5c","#a89770","#3b3b3b","#8e8e8e",
 function ReportsPage() {
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
+  const receipts = useQuery({ queryKey: ["receipts"], queryFn: getReceipts });
   const today = new Date();
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [openCat, setOpenCat] = useState<string | null>(null);
 
   const { byDay, byCat, byAcct, total, txCount } = useMemo(() => {
     const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -73,6 +75,35 @@ function ReportsPage() {
         gymTotal: Array.from(yMap.values()).reduce((a, b) => a + b.gym, 0),
       }));
   }, [expenses.data]);
+
+  // Receipt item breakdown for the selected month
+  const receiptBreakdown = useMemo(() => {
+    const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+    const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    const inMonth = (receipts.data ?? []).filter((r) => {
+      const d = new Date(r.purchase_date ?? r.created_at);
+      return d >= start && d < end;
+    });
+    const cats = new Map<string, { total: number; subs: Map<string, number> }>();
+    for (const r of inMonth) {
+      for (const it of r.items ?? []) {
+        const cat = (it.category ?? "other").toString();
+        const sub = (it.subcategory ?? it.name ?? "—").toString();
+        const price = Number(it.price) || 0;
+        if (!cats.has(cat)) cats.set(cat, { total: 0, subs: new Map() });
+        const c = cats.get(cat)!;
+        c.total += price;
+        c.subs.set(sub, (c.subs.get(sub) ?? 0) + price);
+      }
+    }
+    return Array.from(cats.entries())
+      .map(([name, v]) => ({
+        name,
+        total: v.total,
+        subs: Array.from(v.subs.entries()).map(([n, t]) => ({ name: n, total: t })).sort((a, b) => b.total - a.total),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [receipts.data, cursor]);
 
   const label = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
@@ -199,6 +230,44 @@ function ReportsPage() {
           </div>
         </section>
       )}
+
+      <section className="rounded-lg border border-border bg-card p-6 shadow-paper">
+        <h2 className="font-display text-xl font-semibold mb-1">Receipt breakdown · {label}</h2>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-4">From scanned receipts this month</p>
+        {receiptBreakdown.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No scanned receipts this month.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {receiptBreakdown.map((c) => {
+              const isOpen = openCat === c.name;
+              return (
+                <li key={c.name} className="py-2">
+                  <button
+                    onClick={() => setOpenCat(isOpen ? null : c.name)}
+                    className="w-full flex items-center justify-between py-2 hover:bg-paper-mute/40 rounded px-2"
+                  >
+                    <span className="flex items-center gap-2 font-medium capitalize">
+                      <ChevronDown className={`size-4 transition ${isOpen ? "" : "-rotate-90"}`} />
+                      {c.name}
+                    </span>
+                    <span className="font-mono tabular-nums">{yen(c.total)}</span>
+                  </button>
+                  {isOpen && (
+                    <ul className="ml-6 mt-1 space-y-1">
+                      {c.subs.map((s) => (
+                        <li key={s.name} className="flex justify-between font-mono text-xs text-muted-foreground py-0.5">
+                          <span className="capitalize">{s.name}</span>
+                          <span className="tabular-nums">{yen(s.total)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

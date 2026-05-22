@@ -26,7 +26,7 @@ export type Expense = {
   parent_expense_id: string | null;
 };
 
-export type ReceiptItem = { name: string; qty?: number; price?: number };
+export type ReceiptItem = { name: string; qty?: number; price?: number; category?: string; subcategory?: string };
 
 export type Receipt = {
   id: string;

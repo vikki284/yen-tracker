@@ -128,16 +128,19 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          onboarded: boolean
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          onboarded?: boolean
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          onboarded?: boolean
         }
         Relationships: []
       }

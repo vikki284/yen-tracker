@@ -1,19 +1,34 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
-import { getAccounts, getExpenses, getReceipts, isRealDebit } from "@/lib/db";
-import { yen, dateLabel } from "@/lib/format";
-import { ArrowUpRight, Receipt as ReceiptIcon } from "lucide-react";
+import { getAccounts, getExpenses, getReceipts, getWiseTransfers, isRealDebit } from "@/lib/db";
+import { yen, inr, dateLabel } from "@/lib/format";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowUpRight, Receipt as ReceiptIcon, Send } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Overview — Chōbo" }] }),
+  head: () => ({ meta: [{ title: "Overview — Yen Tracker" }] }),
   component: () => <AppShell><Dashboard /></AppShell>,
 });
 
 function Dashboard() {
+  const { session } = useAuth();
+  const navigate = useNavigate();
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: getAccounts });
   const expenses = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
   const receipts = useQuery({ queryKey: ["receipts"], queryFn: getReceipts });
+  const transfers = useQuery({ queryKey: ["wise_transfers"], queryFn: getWiseTransfers });
+
+  // Redirect to onboarding if profile.onboarded === false
+  useEffect(() => {
+    if (!session) return;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("onboarded").eq("id", session.user.id).maybeSingle();
+      if (data && (data as any).onboarded === false) navigate({ to: "/onboarding" });
+    })();
+  }, [session, navigate]);
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -24,6 +39,9 @@ function Dashboard() {
   const byAccount = new Map<string, number>();
   (expenses.data ?? []).filter((e) => isRealDebit(e) && new Date(e.expense_date) >= monthStart)
     .forEach((e) => byAccount.set(e.account_id, (byAccount.get(e.account_id) ?? 0) + e.amount_yen));
+
+  const sentHomeYen = (transfers.data ?? []).reduce((a, t) => a + t.amount_sent_yen, 0);
+  const sentHomeInr = (transfers.data ?? []).reduce((a, t) => a + t.inr_received, 0);
 
   return (
     <div className="space-y-10">
@@ -66,6 +84,21 @@ function Dashboard() {
               </Link>
             );
           })}
+          <Link
+            to="/wise"
+            className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition"
+          >
+            <div className="flex items-center justify-between">
+              <div className="font-display text-xl font-semibold inline-flex items-center gap-2"><Send className="size-4" /> Sent home</div>
+              <span className="font-mono text-[10px] uppercase tracking-widest opacity-70 inline-flex items-center gap-1">
+                wise · india <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition" />
+              </span>
+            </div>
+            <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(sentHomeYen)}</p>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-widest opacity-70 tabular-nums">
+              ≈ {inr(sentHomeInr)} · {transfers.data?.length ?? 0} transfers
+            </p>
+          </Link>
         </div>
       </section>
 
