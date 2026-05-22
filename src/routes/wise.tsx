@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Plus, Send, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/wise")({
-  head: () => ({ meta: [{ title: "Wise — Chōbo" }] }),
+  head: () => ({ meta: [{ title: "Wise — Yen Tracker" }] }),
   component: () => <AppShell><WisePage /></AppShell>,
 });
 

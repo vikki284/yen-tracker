@@ -13,6 +13,7 @@ import { Route as WiseRouteImport } from './routes/wise'
 import { Route as SalaryRouteImport } from './routes/salary'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ReceiptsRouteImport } from './routes/receipts'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -36,6 +37,11 @@ const ReportsRoute = ReportsRouteImport.update({
 const ReceiptsRoute = ReceiptsRouteImport.update({
   id: '/receipts',
   path: '/receipts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpensesRoute = ExpensesRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/expenses': typeof ExpensesRoute
+  '/onboarding': typeof OnboardingRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
   '/salary': typeof SalaryRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/expenses': typeof ExpensesRoute
+  '/onboarding': typeof OnboardingRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
   '/salary': typeof SalaryRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/expenses': typeof ExpensesRoute
+  '/onboarding': typeof OnboardingRoute
   '/receipts': typeof ReceiptsRoute
   '/reports': typeof ReportsRoute
   '/salary': typeof SalaryRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/expenses'
+    | '/onboarding'
     | '/receipts'
     | '/reports'
     | '/salary'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/expenses'
+    | '/onboarding'
     | '/receipts'
     | '/reports'
     | '/salary'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/expenses'
+    | '/onboarding'
     | '/receipts'
     | '/reports'
     | '/salary'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   ExpensesRoute: typeof ExpensesRoute
+  OnboardingRoute: typeof OnboardingRoute
   ReceiptsRoute: typeof ReceiptsRoute
   ReportsRoute: typeof ReportsRoute
   SalaryRoute: typeof SalaryRoute
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceiptsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/expenses': {
       id: '/expenses'
       path: '/expenses'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   ExpensesRoute: ExpensesRoute,
+  OnboardingRoute: OnboardingRoute,
   ReceiptsRoute: ReceiptsRoute,
   ReportsRoute: ReportsRoute,
   SalaryRoute: SalaryRoute,
@@ -208,3 +229,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

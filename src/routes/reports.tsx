@@ -8,7 +8,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports — Chōbo" }] }),
+  head: () => ({ meta: [{ title: "Reports — Yen Tracker" }] }),
   component: () => <AppShell><ReportsPage /></AppShell>,
 });
 

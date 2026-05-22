@@ -8,7 +8,8 @@ const SYSTEM = `You read Japanese (and English) shop receipts. Extract a structu
 - purchase_date (YYYY-MM-DD if visible, else null)
 - total_yen (integer yen, the final amount paid — 合計 / お会計 / 計)
 - tax_yen (integer yen, consumption tax — 消費税 / 内税, null if not shown)
-- items: array of { name (string, product name as printed, translate trivial katakana only when obvious), qty (number, default 1), price (integer yen) }
+- items: array of { name (string, product name as printed, translate trivial katakana only when obvious), qty (number, default 1), price (integer yen), category (one of: groceries, dining, household, shopping, transit, entertainment, other), subcategory (short English label such as "chicken", "eggs", "vegetables", "fruit", "snacks", "drinks", "toiletries", etc.) }
+Categorize each item: food ingredients (meat, fish, eggs, veggies, fruit, rice, bread, dairy) -> "groceries"; restaurant/cafe/prepared meal -> "dining"; cleaning, paper, kitchen, toiletries -> "household"; clothes, electronics, books -> "shopping"; train/bus/taxi/fuel -> "transit"; movies/games/events -> "entertainment"; otherwise "other".
 Only output valid JSON, no commentary, no markdown. Numbers must be integers in yen.`;
 
 const InputSchema = z.object({ receipt_id: z.string().uuid() });
@@ -66,11 +67,17 @@ export const scanReceipt = createServerFn({ method: "POST" })
     let parsed: any = {};
     try { parsed = JSON.parse(content); } catch { /* fallthrough */ }
 
-    const items = Array.isArray(parsed.items) ? parsed.items.map((i: any) => ({
-      name: String(i.name ?? "Item"),
-      qty: Number.isFinite(+i.qty) ? +i.qty : 1,
-      price: Number.isFinite(+i.price) ? Math.round(+i.price) : 0,
-    })) : [];
+    const VALID_CATS = new Set(["groceries", "dining", "household", "shopping", "transit", "entertainment", "other"]);
+    const items = Array.isArray(parsed.items) ? parsed.items.map((i: any) => {
+      const cat = typeof i.category === "string" && VALID_CATS.has(i.category.toLowerCase()) ? i.category.toLowerCase() : "other";
+      return {
+        name: String(i.name ?? "Item"),
+        qty: Number.isFinite(+i.qty) ? +i.qty : 1,
+        price: Number.isFinite(+i.price) ? Math.round(+i.price) : 0,
+        category: cat,
+        subcategory: typeof i.subcategory === "string" ? i.subcategory.toLowerCase().trim() : "",
+      };
+    }) : [];
 
     const update = {
       merchant: parsed.merchant ?? null,
