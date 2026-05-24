@@ -6,7 +6,7 @@ import { getAccounts, getExpenses, getReceipts, getWiseTransfers, isRealDebit } 
 import { yen, inr, dateLabel } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowUpRight, Receipt as ReceiptIcon, Send } from "lucide-react";
+import { ArrowUpRight, Receipt as ReceiptIcon } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "Overview — Yen Tracker" }] }),
