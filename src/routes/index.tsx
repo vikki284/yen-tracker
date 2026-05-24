@@ -45,11 +45,23 @@ function Dashboard() {
 
   return (
     <div className="space-y-10">
-      <header>
-        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-          {now.toLocaleDateString("en-US", { weekday: "long" })} · {dateLabel(now)}
-        </p>
-        <h1 className="font-display text-5xl font-bold tracking-tight mt-1">Overview</h1>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
+            {now.toLocaleDateString("en-US", { weekday: "long" })} · {dateLabel(now)}
+          </p>
+          <h1 className="font-display text-5xl font-bold tracking-tight mt-1">Overview</h1>
+        </div>
+        <Link
+          to="/wise"
+          className="mt-1 rounded-lg border border-border bg-card px-4 py-3 shadow-paper hover:shadow-lg transition flex items-center gap-4"
+        >
+          <div className="text-right">
+            <p className="font-mono text-xl font-medium tabular-nums">{yen(sentHomeYen)}</p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground tabular-nums">{inr(sentHomeInr)}</p>
+          </div>
+          <ArrowUpRight className="size-4 text-muted-foreground" />
+        </Link>
       </header>
 
       <section>
@@ -84,31 +96,6 @@ function Dashboard() {
               </Link>
             );
           })}
-          <Link
-            to="/wise"
-            className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition block"
-          >
-            <div className="flex items-center justify-between">
-              <div className="font-display text-xl font-semibold inline-flex items-center gap-2"><Send className="size-4" /> Sent home</div>
-              <span className="font-mono text-[10px] uppercase tracking-widest opacity-70 inline-flex items-center gap-1">
-                wise · india <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition" />
-              </span>
-            </div>
-            <p className="mt-6 font-mono text-3xl font-medium tabular-nums">{yen(sentHomeYen)}</p>
-            <p className="mt-1 font-mono text-[11px] uppercase tracking-widest opacity-70 tabular-nums">
-              ≈ {inr(sentHomeInr)} · {transfers.data?.length ?? 0} transfers
-            </p>
-            {(transfers.data ?? []).length > 0 && (
-              <ul className="mt-4 space-y-1.5 border-t border-background/20 pt-3">
-                {(transfers.data ?? []).slice(0, 4).map((t) => (
-                  <li key={t.id} className="flex items-center justify-between font-mono text-[11px] tabular-nums opacity-90">
-                    <span className="truncate">{new Date(t.transfer_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</span>
-                    <span className="text-right">{yen(t.amount_sent_yen)} → {inr(t.inr_received)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Link>
         </div>
       </section>
 
