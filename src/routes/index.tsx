@@ -86,7 +86,7 @@ function Dashboard() {
           })}
           <Link
             to="/wise"
-            className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition"
+            className="rounded-lg border-2 border-foreground bg-foreground text-background p-6 shadow-paper relative overflow-hidden group hover:shadow-lg transition block"
           >
             <div className="flex items-center justify-between">
               <div className="font-display text-xl font-semibold inline-flex items-center gap-2"><Send className="size-4" /> Sent home</div>
@@ -98,6 +98,16 @@ function Dashboard() {
             <p className="mt-1 font-mono text-[11px] uppercase tracking-widest opacity-70 tabular-nums">
               ≈ {inr(sentHomeInr)} · {transfers.data?.length ?? 0} transfers
             </p>
+            {(transfers.data ?? []).length > 0 && (
+              <ul className="mt-4 space-y-1.5 border-t border-background/20 pt-3">
+                {(transfers.data ?? []).slice(0, 4).map((t) => (
+                  <li key={t.id} className="flex items-center justify-between font-mono text-[11px] tabular-nums opacity-90">
+                    <span className="truncate">{new Date(t.transfer_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}</span>
+                    <span className="text-right">{yen(t.amount_sent_yen)} → {inr(t.inr_received)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Link>
         </div>
       </section>
