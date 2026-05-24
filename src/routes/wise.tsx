@@ -138,7 +138,7 @@ function WisePage() {
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="font-display text-xl font-bold flex items-center gap-2"><Send className="size-4" /> Transfer log</h2>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            {transfers.data?.length ?? 0} transfers
+            {(transfers.data?.length ?? 0) + pendingFromAichi.length} entries
           </span>
         </div>
         <table className="w-full text-sm">
@@ -146,6 +146,7 @@ function WisePage() {
             <tr>
               <th className="text-left p-3">Date</th>
               <th className="text-left p-3">To</th>
+              <th className="text-left p-3">Status</th>
               <th className="text-right p-3">Sent (¥)</th>
               <th className="text-right p-3">Fee (¥)</th>
               <th className="text-right p-3">Received (₹)</th>
@@ -154,28 +155,50 @@ function WisePage() {
             </tr>
           </thead>
           <tbody>
-            {(transfers.data ?? []).map((t) => {
-              const r = recipients.data?.find((x) => x.id === t.recipient_id);
-              const net = t.amount_sent_yen - t.charge_yen;
-              const rate = net > 0 ? (t.inr_received / net).toFixed(4) : "—";
-              return (
-                <tr key={t.id} className="border-t border-border hover:bg-paper-mute/40">
-                  <td className="p-3 font-mono text-xs">{dateLabel(t.transfer_date)}</td>
-                  <td className="p-3 font-medium">{r?.name ?? "—"}</td>
-                  <td className="p-3 text-right font-mono tabular-nums">{yen(t.amount_sent_yen)}</td>
-                  <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">{yen(t.charge_yen)}</td>
-                  <td className="p-3 text-right font-mono tabular-nums">{inr(t.inr_received)}</td>
-                  <td className="p-3 text-right font-mono text-xs text-muted-foreground tabular-nums">{rate}</td>
-                  <td className="p-3 text-right">
-                    <Button size="icon" variant="ghost" onClick={() => del.mutate(t.id)} aria-label="Delete">
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-            {(transfers.data ?? []).length === 0 && (
-              <tr><td colSpan={7} className="p-12 text-center text-sm text-muted-foreground">No transfers yet.</td></tr>
+            {[
+              ...pendingFromAichi.map((p) => ({ kind: "pending" as const, date: p.expense.expense_date, item: p })),
+              ...(transfers.data ?? []).map((t) => ({ kind: "sent" as const, date: t.transfer_date, item: t })),
+            ]
+              .sort((a, b) => (a.date < b.date ? 1 : -1))
+              .map((row) => {
+                if (row.kind === "pending") {
+                  const p = row.item;
+                  return (
+                    <tr key={`p-${p.expense.id}`} className="border-t border-border hover:bg-paper-mute/40 bg-amber-50/40 dark:bg-amber-950/10">
+                      <td className="p-3 font-mono text-xs">{dateLabel(p.expense.expense_date)}</td>
+                      <td className="p-3 font-medium">{p.recipient?.name ?? p.expense.category}</td>
+                      <td className="p-3"><span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-amber-200/60 text-amber-900 dark:bg-amber-800/40 dark:text-amber-200">Pending</span></td>
+                      <td className="p-3 text-right font-mono tabular-nums">{yen(p.expense.amount_yen)}</td>
+                      <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">{yen(p.expense.charge_yen)}</td>
+                      <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">—</td>
+                      <td className="p-3 text-right font-mono text-xs text-muted-foreground">—</td>
+                      <td className="p-3" />
+                    </tr>
+                  );
+                }
+                const t = row.item;
+                const r = recipients.data?.find((x) => x.id === t.recipient_id);
+                const net = t.amount_sent_yen - t.charge_yen;
+                const rate = net > 0 ? (t.inr_received / net).toFixed(4) : "—";
+                return (
+                  <tr key={t.id} className="border-t border-border hover:bg-paper-mute/40">
+                    <td className="p-3 font-mono text-xs">{dateLabel(t.transfer_date)}</td>
+                    <td className="p-3 font-medium">{r?.name ?? "—"}</td>
+                    <td className="p-3"><span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-foreground/10">Sent</span></td>
+                    <td className="p-3 text-right font-mono tabular-nums">{yen(t.amount_sent_yen)}</td>
+                    <td className="p-3 text-right font-mono tabular-nums text-muted-foreground">{yen(t.charge_yen)}</td>
+                    <td className="p-3 text-right font-mono tabular-nums">{inr(t.inr_received)}</td>
+                    <td className="p-3 text-right font-mono text-xs text-muted-foreground tabular-nums">{rate}</td>
+                    <td className="p-3 text-right">
+                      <Button size="icon" variant="ghost" onClick={() => del.mutate(t.id)} aria-label="Delete">
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            {(transfers.data ?? []).length === 0 && pendingFromAichi.length === 0 && (
+              <tr><td colSpan={8} className="p-12 text-center text-sm text-muted-foreground">No transfers yet.</td></tr>
             )}
           </tbody>
         </table>
